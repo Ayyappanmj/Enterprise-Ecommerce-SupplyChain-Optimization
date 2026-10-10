@@ -1,0 +1,42 @@
+# Generated data (regenerate with the scripts in src/data_generation and src/etl)
+data/raw/*.csv
+data/processed/**/*.csv
+data/processed/_state/
+data/warehouse/*
+!data/warehouse/.gitkeep
+
+# Local dry-run cloud bucket stand-in
+cloud_mock_bucket/
+
+# Local warehouse DB (regenerate with src/warehouse)
+data/warehouse/*.db
+
+# CSV export of the warehouse (regenerate with src/warehouse/export_to_csv.py)
+data/warehouse/csv_export/
+
+# Logs
+logs/*.log
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Test/coverage artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# Diagram rendering (regenerate with architecture/README.md's instructions)
+node_modules/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
