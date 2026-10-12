@@ -1,0 +1,13 @@
+{
+  "total_orders": 500000,
+  "total_product_revenue_usd": 497018086.85,
+  "total_gross_profit_usd": 177990464.43,
+  "overall_gross_margin_pct": 0.3581,
+  "total_net_profit_usd": 115363353.25,
+  "overall_net_margin_pct": 0.2321,
+  "overall_average_order_value_usd": 994.04,
+  "overall_return_rate": 0.137,
+  "repeat_purchase_rate": 0.9996,
+  "avg_delivery_delay_days": 2.39,
+  "pct_shipments_delayed": 0.3144
+}

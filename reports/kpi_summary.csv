@@ -1,0 +1,2 @@
+total_orders,total_product_revenue_usd,total_gross_profit_usd,overall_gross_margin_pct,total_net_profit_usd,overall_net_margin_pct,overall_average_order_value_usd,overall_return_rate,repeat_purchase_rate,avg_delivery_delay_days,pct_shipments_delayed
+500000,497018086.85,177990464.43,0.3581,115363353.25,0.2321,994.04,0.137,0.9996,2.39,0.3144
