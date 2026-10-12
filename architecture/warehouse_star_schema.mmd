@@ -1,0 +1,96 @@
+erDiagram
+    DimDate ||--o{ FactSales : date_key
+    DimDate ||--o{ FactShipping : date_key
+    DimDate ||--o{ FactReturns : date_key
+    DimCountry ||--o{ FactSales : country_key
+    DimCountry ||--o{ FactShipping : destination_country_key
+    DimCountry ||--o{ FactReturns : country_key
+    DimCustomer ||--o{ FactSales : customer_key
+    DimCustomer ||--o{ FactReturns : customer_key
+    DimProduct ||--o{ FactSales : product_key
+    DimProduct ||--o{ FactReturns : product_key
+    DimWarehouse ||--o{ FactSales : warehouse_key
+    DimWarehouse ||--o{ FactShipping : origin_warehouse_key
+    DimWarehouse ||--o{ FactReturns : warehouse_key
+
+    DimDate {
+        int date_key PK
+        date full_date
+        int year
+        int quarter
+        int month
+        string day_name
+        bool is_weekend
+    }
+    DimCountry {
+        int country_key PK
+        string country_id
+        string country_name
+        string region_name
+        string currency_code
+    }
+    DimCustomer {
+        int customer_key PK
+        string customer_id
+        string segment
+        string loyalty_tier
+        int country_key FK
+        date signup_date
+    }
+    DimProduct {
+        int product_key PK
+        string product_id
+        string category
+        string sub_category
+        string supplier_id
+        decimal unit_cost_usd
+        decimal unit_price_usd
+    }
+    DimWarehouse {
+        int warehouse_key PK
+        string warehouse_id
+        string warehouse_name
+        string warehouse_type
+        int country_key FK
+        bigint capacity_units
+    }
+    FactSales {
+        bigint sales_key PK
+        int date_key FK
+        string order_id
+        string order_item_id
+        int customer_key FK
+        int product_key FK
+        int warehouse_key FK
+        int country_key FK
+        int quantity
+        decimal line_net_revenue_usd
+        decimal line_cost_usd
+        decimal line_gross_profit_usd
+        decimal line_shipping_cost_usd
+        bool is_cross_border
+    }
+    FactShipping {
+        bigint shipping_key PK
+        int date_key FK
+        string shipping_id
+        string order_id
+        int origin_warehouse_key FK
+        int destination_country_key FK
+        string partner_id
+        int delivery_delay_days
+        bool is_delayed
+    }
+    FactReturns {
+        bigint return_key PK
+        int date_key FK
+        string return_id
+        string order_id
+        int product_key FK
+        int customer_key FK
+        int warehouse_key FK
+        int country_key FK
+        string return_reason
+        decimal refund_amount_usd
+        bool is_cross_border
+    }

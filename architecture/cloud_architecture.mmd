@@ -1,0 +1,39 @@
+flowchart TB
+    Raw[("data/raw/\n15 source CSVs")]
+    Proc[("data/processed/\nETL output")]
+    Rej[("data/processed/rejected/\nquarantined rows")]
+
+    UM["upload_manager.py\nbuild_upload_plan() +\nensure_bucket_exists() +\nskip-if-exists"]
+
+    subgraph Provider["One interface, three providers (CLOUD_PROVIDER env var)"]
+        direction LR
+        Dry["dry_run\nlocal folder stand-in\n(cloud_mock_bucket/)\n- tested here"]
+        GCS["gcs\nGoogle Cloud Storage\n(google-cloud-storage,\nlazy-imported)"]
+        S3["s3\nAWS S3\n(boto3,\nlazy-imported)"]
+    end
+
+    subgraph Bucket["Bucket layout (same for every provider)"]
+        direction TB
+        B1["raw/&lt;table&gt;.csv\n(overwritten in place)"]
+        B2["processed/&lt;table&gt;/&lt;table&gt;_&lt;timestamp&gt;.csv\n(never clobbered)"]
+        B3["rejected/&lt;table&gt;/&lt;original_filename&gt;\n(audit trail)"]
+    end
+
+    Retry["retry_with_backoff()\nwraps every real network call\n(same decorator as Phase 2)"]
+
+    Raw --> UM
+    Proc --> UM
+    Rej --> UM
+    UM --> Provider
+    Dry --> Bucket
+    GCS --> Retry --> Bucket
+    S3 --> Retry
+
+    classDef store fill:#eef7ee,stroke:#4a9c5d
+    classDef process fill:#fef6e4,stroke:#c9962c
+    classDef tested fill:#e3f5e1,stroke:#2f8f3e,stroke-width:2px
+    classDef untested fill:#fdeceb,stroke:#c0392b,stroke-dasharray: 4 3
+    class Raw,Proc,Rej,B1,B2,B3 store
+    class UM,Retry process
+    class Dry tested
+    class GCS,S3 untested

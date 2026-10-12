@@ -1,0 +1,32 @@
+%%{init: {'gitGraph': {'showCommitLabel': true}} }%%
+gitGraph
+    commit id: "Initial project setup"
+    commit id: "Generate enterprise datasets (Phase 1)"
+    branch feature/etl-pipeline
+    checkout feature/etl-pipeline
+    commit id: "Build ETL pipeline (Phase 2)"
+    checkout main
+    merge feature/etl-pipeline tag: "v0.2"
+    branch feature/cloud-storage
+    checkout feature/cloud-storage
+    commit id: "Integrate cloud storage (Phase 3)"
+    checkout main
+    merge feature/cloud-storage tag: "v0.3"
+    branch feature/cleaning-features
+    checkout feature/cleaning-features
+    commit id: "Data cleaning (Phase 4)"
+    commit id: "Feature engineering (Phase 5)"
+    checkout main
+    merge feature/cleaning-features tag: "v0.5"
+    branch feature/warehouse-sql
+    checkout feature/warehouse-sql
+    commit id: "Build MySQL warehouse (Phase 6)"
+    commit id: "Advanced SQL + fix FactReturns keys (Phase 7)"
+    checkout main
+    merge feature/warehouse-sql tag: "v0.7"
+    branch feature/dashboard
+    checkout feature/dashboard
+    commit id: "Power BI DAX + data model (Phase 8)"
+    checkout main
+    merge feature/dashboard tag: "v0.8"
+    commit id: "Improve documentation"

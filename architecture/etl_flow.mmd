@@ -1,0 +1,33 @@
+flowchart TB
+    S1["Source 1: Web Orders CSV"]
+    S2["Source 2: Inventory System CSV"]
+    S3["Source 3: Shipping API (Flask,\npaginated, ~8% injected 503s)"]
+
+    E["Extract (incremental)\none module per source,\nfilters rows newer than\nthe stored watermark.\nSource 3 wraps every page\nfetch in retry_with_backoff()"]
+
+    V{"Validate\nschema - dedupe -\nnull keys - impossible values"}
+    Q[("Quarantine\ndata/processed/rejected/")]
+
+    T["Transform\nstandardize dtypes,\ntag _source_system / _ingested_at"]
+
+    L["Load\nappend-only write"]
+    P[("data/processed/\norders.csv, inventory.csv, shipping.csv")]
+    St[("State\netl_state.json\nwatermark per source")]
+
+    S1 --> E
+    S2 --> E
+    S3 --> E
+    E --> V
+    V -- invalid rows --> Q
+    V -- valid rows --> T
+    T --> L
+    L --> P
+    L -- "advance watermark\n(on success only)" --> St
+    St -. "next run reads\nthe watermark back" .-> E
+
+    classDef source fill:#e8eef7,stroke:#4a6fa5
+    classDef process fill:#fef6e4,stroke:#c9962c
+    classDef store fill:#eef7ee,stroke:#4a9c5d
+    class S1,S2,S3 source
+    class E,V,T,L process
+    class Q,St,P store

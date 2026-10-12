@@ -1,0 +1,44 @@
+flowchart TB
+    WH[("Warehouse\nwarehouse.db (SQLite, tested)\nor MySQL (untested - no server available)")]
+
+    subgraph Connect["Get Data (3 options)"]
+        direction LR
+        CSV["Option A: CSV export\nexport_to_csv.py\n- tested end-to-end"]
+        MySQLConn["Option B: MySQL connector\n- untested, no server"]
+        ODBC["Option C: SQLite via ODBC\n- untested, needs driver"]
+    end
+
+    Model["Power BI data model\n5 dims + 3 facts, relationships\nmatching sql/schema.sql.\nDimDate marked as date table."]
+
+    DAX["dax_measures.dax\nevery headline measure's value\nchecked against the warehouse\nin Python/SQL first"]
+
+    subgraph Pages["6 report pages"]
+        direction LR
+        P1["1. Executive\nOverview"]
+        P2["2. Global\nMap"]
+        P3["3. Warehouse\nPerformance"]
+        P4["4. Shipping\nIntelligence"]
+        P5["5. Customer\nAnalytics"]
+        P6["6. Profit\nAnalysis"]
+    end
+
+    Interact["Drill-through - Bookmarks -\nReport-page tooltips - Synced slicers"]
+
+    Extra1[("dim_warehouse_features.csv\n(Phase 5 - for Utilization %,\nnot in the star schema)")]
+    Extra2[("dim_customer_features.csv\n(Phase 5 - for Projected CLV)")]
+
+    WH --> Connect
+    Connect --> Model
+    Extra1 -.-> Model
+    Extra2 -.-> Model
+    Model --> DAX
+    DAX --> Pages
+    Pages --> Interact
+
+    classDef tested fill:#e3f5e1,stroke:#2f8f3e,stroke-width:2px
+    classDef untested fill:#fdeceb,stroke:#c0392b,stroke-dasharray: 4 3
+    classDef process fill:#fef6e4,stroke:#c9962c
+    classDef store fill:#eef7ee,stroke:#4a9c5d
+    class CSV tested
+    class MySQLConn,ODBC,Model,DAX,Pages,Interact,P1,P2,P3,P4,P5,P6 untested
+    class WH,Extra1,Extra2 store
