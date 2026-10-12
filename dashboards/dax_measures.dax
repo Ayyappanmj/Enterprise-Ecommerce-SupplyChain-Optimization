@@ -1,0 +1,288 @@
+// ============================================================================
+// Phase 8 - Power BI Executive Dashboard: DAX Measures
+// ============================================================================
+// Paste these into a Power BI model connected to the Phase 6 warehouse
+// (MySQL or the SQLite file, via an ODBC driver - see dashboards/README.md).
+//
+// STATUS: written against Power BI's documented DAX language and checked
+// arithmetically against the real warehouse in Python/SQL (see the
+// "Expected value" comment on each headline measure), but NOT executed in an
+// actual Power BI/Analysis Services engine - none was available in the build
+// environment. Paste these in and if a value doesn't match the comment,
+// something is off (most likely a relationship or a data-type mismatch) -
+// tell me and I'll fix it.
+//
+// PREREQUISITE: DimDate must be marked as a Date Table on DimDate[full_date]
+// (Model view > right-click DimDate > Mark as date table) before any time-
+// intelligence measure (anything using DATEADD/SAMEPERIODLASTYEAR) will work.
+//
+// A constant used below to match Phase 5's documented net-margin assumption
+// exactly (see src/feature_engineering/config.py: ASSUMED_OPEX_RATE = 0.08).
+// If you change it there, change it here too, or the two phases will disagree.
+// ============================================================================
+
+
+// ============================================================
+// CORE MEASURES (used across every page)
+// ============================================================
+
+Total Revenue =
+SUM ( FactSales[line_net_revenue_usd] )
+// Expected value on the full dataset: $497,018,076.76
+
+Total Orders =
+DISTINCTCOUNT ( FactSales[order_id] )
+// Expected value: 500,000
+
+Average Order Value =
+DIVIDE ( [Total Revenue], [Total Orders] )
+// Expected value: $994.04
+
+Total Units Sold =
+SUM ( FactSales[quantity] )
+
+Total Gross Profit =
+SUM ( FactSales[line_gross_profit_usd] )
+// Expected value: $177,990,454.34
+
+Gross Margin % =
+DIVIDE ( [Total Gross Profit], [Total Revenue] )
+// Expected value: 35.81%
+
+Total Shipping Cost =
+SUM ( FactSales[line_shipping_cost_usd] )
+// Expected value: $7,003,652.36
+
+Total Refunds =
+SUM ( FactReturns[refund_amount_usd] )
+// Expected value: $15,862,009.47
+
+Assumed OpEx Rate = 0.08   // keep in sync with ASSUMED_OPEX_RATE in config.py
+
+Assumed OpEx =
+[Total Revenue] * [Assumed OpEx Rate]
+// Expected value: $39,761,446.14
+
+Total Net Profit =
+[Total Gross Profit] - [Total Shipping Cost] - [Total Refunds] - [Assumed OpEx]
+// Expected value: $115,363,346.37
+
+Net Margin % =
+DIVIDE ( [Total Net Profit], [Total Revenue] )
+// Expected value: 23.21%
+
+Total Returns =
+COUNTROWS ( FactReturns )
+// Expected value: 75,000
+
+Return Rate (Orders) =
+VAR ReturnedOrders = CALCULATE ( DISTINCTCOUNT ( FactReturns[order_id] ) )
+RETURN
+    DIVIDE ( ReturnedOrders, [Total Orders] )
+// Expected value: 13.70%
+
+Avg Delivery Delay (Days) =
+AVERAGE ( FactShipping[delivery_delay_days] )
+// Expected value: 2.39
+
+Pct Shipments Delayed =
+CALCULATE (
+    DIVIDE ( COUNTROWS ( FactShipping ), CALCULATE ( COUNTROWS ( FactShipping ), ALL ( FactShipping ) ) ),
+    FactShipping[is_delayed] = TRUE
+)
+// Simpler equivalent: AVERAGEX ( FactShipping, FactShipping[is_delayed] )
+// Expected value: 31.44%
+
+Pct Cross-Border Orders =
+CALCULATE (
+    DISTINCTCOUNT ( FactSales[order_id] ),
+    FactSales[is_cross_border] = TRUE
+) / [Total Orders]
+// NOTE: this comes out to ~96.7% on the generated dataset, because Phase 1's
+// synthetic order generator assigns each order's fulfillment warehouse at
+// random, independent of the customer's country - not because "cross-border"
+// is genuinely this common. It's exactly 1 - 1/30 (30 countries, uniform
+// random assignment). The flag and this measure are both computed correctly;
+// the underlying synthetic data just doesn't model "ship from nearest
+// warehouse" logic. Don't present this % as a real finding - see
+// dashboards/README.md for the full caveat.
+
+
+// ============================================================
+// PAGE 1 - EXECUTIVE OVERVIEW
+// ============================================================
+
+Revenue MoM % =
+VAR CurrentRevenue = [Total Revenue]
+VAR PriorRevenue = CALCULATE ( [Total Revenue], DATEADD ( DimDate[full_date], -1, MONTH ) )
+RETURN
+    DIVIDE ( CurrentRevenue - PriorRevenue, PriorRevenue )
+
+Revenue YoY % =
+VAR CurrentRevenue = [Total Revenue]
+VAR PriorRevenue = CALCULATE ( [Total Revenue], SAMEPERIODLASTYEAR ( DimDate[full_date] ) )
+RETURN
+    DIVIDE ( CurrentRevenue - PriorRevenue, PriorRevenue )
+
+Orders MoM % =
+VAR CurrentOrders = [Total Orders]
+VAR PriorOrders = CALCULATE ( [Total Orders], DATEADD ( DimDate[full_date], -1, MONTH ) )
+RETURN
+    DIVIDE ( CurrentOrders - PriorOrders, PriorOrders )
+
+Gross Margin % MoM Change (pp) =
+VAR CurrentMargin = [Gross Margin %]
+VAR PriorMargin = CALCULATE ( [Gross Margin %], DATEADD ( DimDate[full_date], -1, MONTH ) )
+RETURN
+    ( CurrentMargin - PriorMargin ) * 100    // in percentage points
+
+
+// ============================================================
+// PAGE 2 - GLOBAL MAP (Country Performance)
+// ============================================================
+// Map visual: use DimCountry[country_name] as Location (set Data Category =
+// Country in Model view), bubble/color size = [Total Revenue] or [Net Margin %].
+
+Revenue Rank by Country =
+RANKX ( ALLSELECTED ( DimCountry[country_name] ), [Total Revenue], , DESC )
+
+Country Share of Total Revenue % =
+DIVIDE ( [Total Revenue], CALCULATE ( [Total Revenue], ALLSELECTED ( DimCountry ) ) )
+
+Return Rate by Country =
+// Uses FactReturns[country_key], added in the Phase 8 schema patch
+// specifically so this measure filters correctly instead of always
+// returning the global total.
+VAR ReturnedOrders = CALCULATE ( DISTINCTCOUNT ( FactReturns[order_id] ) )
+RETURN
+    DIVIDE ( ReturnedOrders, [Total Orders] )
+
+
+// ============================================================
+// PAGE 3 - WAREHOUSE PERFORMANCE (Delay Analysis)
+// ============================================================
+
+Shipments =
+COUNTROWS ( FactShipping )
+
+On-Time Rate =
+CALCULATE (
+    DIVIDE ( COUNTROWS ( FactShipping ), CALCULATE ( COUNTROWS ( FactShipping ), ALL ( FactShipping[delivery_delay_days] ) ) ),
+    FactShipping[delivery_delay_days] <= 0
+)
+// Simpler equivalent: AVERAGEX ( FactShipping, IF ( FactShipping[delivery_delay_days] <= 0, 1, 0 ) )
+
+Worst Warehouse Rank (by Delay) =
+RANKX ( ALLSELECTED ( DimWarehouse[warehouse_id] ), [Avg Delivery Delay (Days)], , DESC )
+
+Severe Delay Shipments (15d+) =
+CALCULATE ( COUNTROWS ( FactShipping ), FactShipping[delivery_delay_days] >= 15 )
+
+// NOTE - Warehouse Utilization % (inventory / capacity) cannot be built from
+// this star schema: Inventory isn't part of the Phase 6 model (only Orders,
+// Order_Items, Shipping and Returns were modeled as facts). Import
+// data/processed/features/dim_warehouse_features.csv as a second table
+// (Get Data > Text/CSV) and relate it to DimWarehouse on warehouse_id to get
+// utilization_pct directly from Phase 5 rather than re-deriving it here.
+
+
+// ============================================================
+// PAGE 4 - SHIPPING INTELLIGENCE (Logistics Partner Comparison)
+// ============================================================
+
+Partner Avg Delay =
+AVERAGE ( FactShipping[delivery_delay_days] )
+
+Partner Rank (Best to Worst) =
+RANKX ( ALLSELECTED ( FactShipping[partner_id] ), [Partner Avg Delay], , ASC )
+
+Partner On-Time Rate =
+[On-Time Rate]   // same measure, sliced by partner_id via the visual's row context
+
+Delay Volume Score =
+// Flags lanes with a bad COMBINATION of high volume and high delay (mirrors
+// sql/business_queries.sql E3) - a genuine "fix this lane first" score.
+[Shipments] * [Avg Delivery Delay (Days)]
+
+
+// ============================================================
+// PAGE 5 - CUSTOMER ANALYTICS (CLV, Retention, Repeat Purchases)
+// ============================================================
+
+Total Customers =
+DISTINCTCOUNT ( FactSales[customer_key] )
+
+Repeat Customers =
+VAR OrdersPerCustomer =
+    SUMMARIZE ( FactSales, FactSales[customer_key], "Orders", DISTINCTCOUNT ( FactSales[order_id] ) )
+RETURN
+    COUNTROWS ( FILTER ( OrdersPerCustomer, [Orders] > 1 ) )
+
+Repeat Purchase Rate =
+DIVIDE ( [Repeat Customers], [Total Customers] )
+// Expected value: 99.96% on this dataset - see dashboards/README.md for why
+// this is a property of the synthetic data's order-to-customer ratio
+// (~10 orders/customer on average), not a data error.
+
+Avg Customer Lifetime Value (Historical) =
+AVERAGEX (
+    SUMMARIZE ( FactSales, FactSales[customer_key], "CLV", [Total Revenue] ),
+    [CLV]
+)
+// Expected value: $9,941.36
+
+// NOTE - Projected CLV (the 3-year-horizon extrapolation) depends on an
+// annualized purchase-frequency assumption that's already implemented in
+// Phase 5 (src/feature_engineering/customer_features.py,
+// PROJECTED_CLV_HORIZON_YEARS). Import
+// data/processed/features/dim_customer_features.csv and relate it to
+// DimCustomer on customer_id rather than re-deriving that assumption in DAX.
+
+Customer Value Quartile =
+// Calculated column on DimCustomer (not a measure) - requires a
+// relationship to FactSales already in place.
+VAR CustomerRevenue =
+    CALCULATE ( SUM ( FactSales[line_net_revenue_usd] ), USERELATIONSHIP ( FactSales[customer_key], DimCustomer[customer_key] ) )
+RETURN
+    SWITCH (
+        TRUE (),
+        CustomerRevenue >= PERCENTILE.INC ( DimCustomer[CustomerRevenue], 0.75 ), "Q1 (Top)",
+        CustomerRevenue >= PERCENTILE.INC ( DimCustomer[CustomerRevenue], 0.50 ), "Q2",
+        CustomerRevenue >= PERCENTILE.INC ( DimCustomer[CustomerRevenue], 0.25 ), "Q3",
+        "Q4 (Bottom)"
+    )
+
+
+// ============================================================
+// PAGE 6 - PROFIT ANALYSIS (Margins, Returns, Shipping Cost)
+// ============================================================
+
+Profit After Returns =
+[Total Gross Profit] - [Total Refunds]
+
+Refund as % of Gross Profit =
+DIVIDE ( [Total Refunds], [Total Gross Profit] )
+
+Shipping Cost as % of Revenue =
+DIVIDE ( [Total Shipping Cost], [Total Revenue] )
+
+Top Return Reason =
+// Text measure for a card visual / tooltip.
+VAR ReasonsByRefund =
+    TOPN ( 1, SUMMARIZE ( FactReturns, FactReturns[return_reason], "Refund", SUM ( FactReturns[refund_amount_usd] ) ), [Refund], DESC )
+RETURN
+    MAXX ( ReasonsByRefund, FactReturns[return_reason] )
+
+
+// ============================================================
+// DRILL-THROUGH / TOOLTIP SUPPORT MEASURES
+// ============================================================
+
+Selected Country Revenue Tooltip =
+"Revenue: $" & FORMAT ( [Total Revenue], "#,##0" )
+    & " | Margin: " & FORMAT ( [Gross Margin %], "0.0%" )
+    & " | Orders: " & FORMAT ( [Total Orders], "#,##0" )
+
+Selected Warehouse Delay Tooltip =
+"Avg delay: " & FORMAT ( [Avg Delivery Delay (Days)], "0.0" ) & " days"
+    & " | Shipments: " & FORMAT ( [Shipments], "#,##0" )
