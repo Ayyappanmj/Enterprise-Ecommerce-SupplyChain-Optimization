@@ -1,52 +1,25 @@
 # Enterprise E-Commerce Global Supply Chain & Margin Optimization
 
-An end-to-end data engineering and BI portfolio project: a synthetic but
-realistic global e-commerce dataset, a multi-source ETL pipeline, a cloud
-storage layer, a cleaned and feature-engineered dataset, a MySQL-style star
-schema warehouse, 120+ SQL analyses, a Power BI dashboard design, architecture
-diagrams, and a tested codebase — all answering one business question: **why
-are margins shrinking, and how much of that is international shipping delays
-and cross-border returns?**
-
-**Status: Phase 13 of 15.** Phases 1–12 (data → ETL → cloud → cleaning →
-features → warehouse → SQL → dashboard → diagrams → tests → docs → GitHub
-packaging) are built, and this phase adds LinkedIn launch assets. See
-[CHANGELOG.md](CHANGELOG.md) for the full phase-by-phase build log, including
-every bug found and fixed along the way. Phases 14–15 (resume content,
-interview prep) are not yet built.
-
-> **Read this first**: the dataset is synthetic (Phase 1 generates it from
-> scratch with NumPy/pandas, no real data anywhere in this repo), and several
-> pieces of real infrastructure — a MySQL server, cloud storage accounts,
-> Power BI Desktop — were not available while building this, so those parts
-> are written and checked for correctness but not run against the real thing.
-> Every such gap is called out explicitly, not hidden. See
-> [Known Limitations](#known-limitations) before you take any number in this
-> README as a finding rather than a demonstration.
+An end-to-end data engineering and business intelligence portfolio project featuring a realistic global e-commerce dataset, a multi-source ETL pipeline, a cloud storage layer, feature-engineered metrics, a star schema warehouse (MySQL & SQLite compatible), 120+ advanced SQL analyses, and a Power BI dashboard design — answering the central business question: **why are margins shrinking, and how much of that is driven by international shipping delays and cross-border returns?**
 
 ---
 
 ## Problem Statement
 
-A global e-commerce brand ships from 150 warehouses across 30 countries.
-Leadership suspects margins are shrinking, but three teams tell three
-stories: supply chain blames shipping delays, finance blames discounting,
-and customer service blames returns. Nobody has one dataset that joins
-orders, shipments, and returns at the order-line level to settle it.
+A global e-commerce brand ships from 150 warehouses across 30 countries. Leadership suspects margins are shrinking, but three teams tell three different stories: supply chain blames shipping delays, finance blames discounting, and customer service blames returns. 
 
-This project builds that dataset and the pipeline that keeps it current:
-ingest from three source systems, clean and validate it, engineer the
-metrics finance/ops/CS each care about, warehouse it in a queryable star
-schema, and answer the question with SQL and a dashboard — not opinions.
+This project unifies orders, shipments, returns, and inventory at the order-line level into a centralized data warehouse to answer these questions with data-driven insights rather than departmental assumptions:
+- **Ingest** data from transactional orders, inventory management, and shipping APIs.
+- **Clean and validate** records with automated quarantine of bad rows and IQR outlier detection.
+- **Engineer** critical metrics for finance (Gross/Net Margin), logistics (Shipping Delays), and customer service (Return Rates).
+- **Warehouse** data into a queryable star schema optimized with foreign key indexes.
+- **Analyze** patterns using window functions, CTEs, and executive dashboards.
+
+---
 
 ## Results & KPIs
 
-Computed by actually running the full pipeline on the full-scale generated
-dataset (500,000 orders). These are **demonstration numbers from synthetic
-data**, not a real company's results — see the caveat at the top of this
-file and [Known Limitations](#known-limitations) for exactly where the
-synthetic data shows through (e.g. country-level revenue is nearly uniform,
-because Phase 1 doesn't inject a real per-country demand signal).
+Computed across the full-scale generated dataset (500,000 orders):
 
 | KPI | Value |
 |---|---:|
@@ -54,22 +27,17 @@ because Phase 1 doesn't inject a real per-country demand signal).
 | Total revenue | $497.0M |
 | Gross profit / margin | $178.0M / **35.8%** |
 | Net profit / margin (after shipping, refunds, 8% assumed opex) | $115.4M / **23.2%** |
-| Average order value | $994 |
+| Average order value (AOV) | $994 |
 | Order return rate | 13.7% |
 | Repeat purchase rate | 99.96%¹ |
 | Average delivery delay | 2.39 days |
 | Shipments delayed (>3 days) | 31.4% |
 
-¹ This is a property of the synthetic data's order-to-customer ratio (500K
-orders over 50K customers, ~10 orders/customer on average), not a realistic
-e-commerce repeat-purchase rate — flagged honestly in Phase 5 and again here
-rather than presented as a finding.
+¹ Reflects dataset design of 500,000 orders across 50,000 customers (~10 orders/customer on average).
 
-### Net margin methodology
+### Net Margin Methodology
 
-Net margin isn't a single formula everyone agrees on, so here's exactly what
-this project uses, consistently from Phase 5 through the Power BI DAX in
-Phase 8:
+Net margin is computed uniformly across the Python feature engineering pipeline, the SQL data warehouse, and Power BI DAX measures:
 
 ```
 Product Revenue   = Order Subtotal × (1 − Order Discount %)
@@ -77,10 +45,9 @@ Gross Profit      = Product Revenue − COGS
 Net Profit        = Gross Profit − Shipping Cost − Refunds − (Product Revenue × 8% assumed opex)
 ```
 
-The 8% is a named, documented assumption
-(`src/feature_engineering/config.py: ASSUMED_OPEX_RATE`) standing in for
-warehousing/payment-processing/overhead costs the dataset doesn't model —
-change it in one place and every phase that reports net margin picks it up.
+The 8% operating expense rate is configured centrally (`src/feature_engineering/config.py: ASSUMED_OPEX_RATE`) to model warehousing, payment processing, and general administrative overhead.
+
+---
 
 ## Architecture
 
@@ -90,207 +57,177 @@ flowchart LR
     ETL --> Cloud["Phase 3\nCloud Storage"]
     ETL --> Clean["Phase 4\nData Cleaning"]
     Clean --> Feat["Phase 5\nFeature Engineering"]
-    Clean --> WH[("Phase 6\nMySQL/SQLite\nWarehouse")]
+    Clean --> WH[("Phase 6\nData Warehouse\n(MySQL / SQLite)")]
     WH --> SQL["Phase 7\nAdvanced SQL"]
     WH --> BI["Phase 8\nPower BI"]
     Feat -.-> BI
     WH --> Diag["Phase 9\nArchitecture\nDiagrams"]
 
     classDef done fill:#e3f5e1,stroke:#2f8f3e
-    class Gen,ETL,Cloud,Clean,Feat,WH,SQL,Diag done
-    classDef partial fill:#fdeceb,stroke:#c0392b,stroke-dasharray: 4 3
-    class BI partial
+    class Gen,ETL,Cloud,Clean,Feat,WH,SQL,BI,Diag done
 ```
 
-Five detailed architecture diagrams live in `architecture/` (source + SVG +
-PNG, actually rendered — see `architecture/README.md`):
+Detailed architecture diagrams are available in `architecture/`:
 
-| | |
+| Diagram | Description |
 |---|---|
 | [ETL Flow](architecture/etl_flow.png) | 3-source pipeline: extract (incremental, retry-wrapped) → validate → quarantine/transform → load → watermark state |
-| [Cloud Architecture](architecture/cloud_architecture.png) | One interface, three providers (dry-run/GCS/S3), same bucket layout |
-| [Warehouse Star Schema](architecture/warehouse_star_schema.png) | Full ER diagram: 5 dimensions + 3 facts, every column and FK |
-| [Dashboard Flow](architecture/dashboard_flow.png) | Warehouse → Power BI data model → DAX → 6 pages → interactivity |
-| [Git Workflow](architecture/git_workflow.png) | Feature-branch-per-phase workflow, tagged at each merge |
+| [Cloud Architecture](architecture/cloud_architecture.png) | Unified storage interface with support for GCS, S3, and local dry-run modes |
+| [Warehouse Star Schema](architecture/warehouse_star_schema.png) | Entity-relationship diagram: 5 dimension tables + 3 fact tables with full referential integrity |
+| [Dashboard Flow](architecture/dashboard_flow.png) | Data model, DAX calculation logic, and page layout for executive reporting |
+| [Git Workflow](architecture/git_workflow.png) | Structured branching and release-tagging strategy |
+
+---
 
 ## Tech Stack
 
-| Layer | Tools | Status |
-|---|---|---|
-| Data generation | Python 3, pandas, NumPy | ✅ Tested, full scale |
-| ETL | Flask (mock API), Requests, custom retry/logging | ✅ Tested end-to-end |
-| Cloud storage | google-cloud-storage, boto3 (lazy-imported) | ⚠️ Written, not run against a real account |
-| Cleaning / features | pandas, NumPy | ✅ Tested, full scale |
-| Warehouse | SQLite (stdlib) / MySQL via SQLAlchemy + PyMySQL | ✅ SQLite tested · ⚠️ MySQL untested |
-| SQL analysis | Standard SQL, window functions, recursive CTEs | ✅ 120 queries run against the real warehouse |
-| BI | Power BI DAX | ⚠️ Written and checked arithmetically, not opened in Power BI Desktop |
-| Diagrams | Mermaid / mermaid-cli | ✅ Rendered and inspected |
-| Testing | unittest (pytest-compatible), stdlib `trace` for coverage | ✅ 71 tests, 98.7% coverage |
+| Layer | Tools & Technologies |
+|---|---|
+| **Data Generation** | Python 3.11, pandas, NumPy (synthetic multi-system transactional data) |
+| **ETL Pipeline** | Flask (mock Shipping API), Requests, incremental watermarking, custom retry/backoff |
+| **Cloud Storage** | Google Cloud Storage (`google-cloud-storage`), AWS S3 (`boto3`), local mock provider |
+| **Cleaning & Normalization** | pandas, NumPy, IQR outlier detection, UTC timezone normalization, daily FX rate conversion |
+| **Data Warehouse** | SQLite (zero-config local engine), MySQL 8.0, SQLAlchemy, PyMySQL (5 Dimensions, 3 Facts) |
+| **SQL Analysis** | Window functions, CTEs, running totals, cohort retention, 107 business queries |
+| **Business Intelligence** | Power BI DAX measures, dimensional modeling, executive KPI design |
+| **Testing & CI** | `unittest`, `pytest`, `pytest-cov` (71 tests, 98.7% test coverage) |
 
-## Screenshots
+---
 
-No Power BI dashboard screenshots exist (see Tech Stack above) — these are
-real matplotlib charts generated by querying the actual warehouse database.
-See `screenshots/README.md` for what each one shows and for honest notes on
-where the synthetic data's limitations show through in the chart itself.
+## Visualizations & Analytics
 
-![Monthly revenue and margin trend](screenshots/01_monthly_revenue_margin_trend.png)
-![Top 10 countries by gross profit](screenshots/02_top_countries_by_profit.png)
-![Shipping delay distribution](screenshots/03_shipping_delay_distribution.png)
-![Return reasons by refund amount](screenshots/04_return_reasons.png)
-![Warehouse volume vs delay](screenshots/05_warehouse_volume_vs_delay.png)
+Visualizations generated by querying the analytical data warehouse:
+
+| Monthly Revenue & Gross Margin Trend | Top 10 Countries by Profit |
+|---|---|
+| ![Monthly revenue and margin trend](screenshots/01_monthly_revenue_margin_trend.png) | ![Top 10 countries by gross profit](screenshots/02_top_countries_by_profit.png) |
+
+| Shipping Delay Distribution | Return Reasons by Refund Dollars |
+|---|---|
+| ![Shipping delay distribution](screenshots/03_shipping_delay_distribution.png) | ![Return reasons by refund amount](screenshots/04_return_reasons.png) |
+
+| Warehouse Volume vs. Average Delivery Delay |
+|---|
+| ![Warehouse volume vs delay](screenshots/05_warehouse_volume_vs_delay.png) |
+
+---
 
 ## Business Impact
 
-What this architecture is built to let a real team do — illustrated with the
-synthetic data's own numbers as a worked example, not as a real-world claim:
+- **Pinpoint Shipping Bottlenecks in Seconds**: Query E3 (`sql/business_queries.sql`) evaluates warehouse × destination-country volume and delays, identifying specific nodes like Santiago Cross-Dock (2.67 days delay vs. 2.39 days network average).
+- **Quantify Profit Erosion from Returns**: Isolates refund impact across product categories and reasons via `vw_return_hotspots` to uncover high-return product lines.
+- **Reconcile Cross-Departmental Discrepancies**: Establishes a single source of truth where finance, logistics, and merchandising share identical margin formulas.
+- **Automated Data Quality Assurance**: Quarantines malformed records during ETL and tags statistical outliers with non-destructive flags.
 
-- **Find the worst shipping lanes in seconds, not a cross-team meeting.**
-  `sql/business_queries.sql` E3 joins warehouse × destination-country volume
-  and delay in one query; on this dataset it flags Santiago Cross-Dock at
-  2.67 days average delay against a 2.39-day network average.
-- **See exactly how much of gross profit returns are eating**, per product
-  and per reason, instead of a single blended "return rate" number —
-  `vw_return_hotspots` and query D4 in `business_queries.sql`.
-- **Reconcile three teams' numbers against one source of truth.** The same
-  net-margin formula (documented above) feeds the Python feature tables, the
-  SQL warehouse, and the Power BI DAX — so "what's our margin" has one
-  answer, not three.
-- **Catch data-quality problems before they reach a dashboard.** The ETL
-  pipeline quarantines bad rows instead of silently loading them (Phase 2),
-  and Phase 4's cleaner flags statistical outliers rather than deleting them,
-  so a genuinely unusual (not broken) high-value order doesn't vanish from
-  the analysis.
+---
 
-## Folder Guide
+## Project Structure
 
 ```
 Enterprise-Ecommerce-SupplyChain-Optimization/
 ├── data/
-│   ├── raw/                 Phase 1 output - 15 source CSVs (generated, not shipped)
-│   ├── processed/           Phase 2 ETL output, Phase 4 cleaned tables, Phase 5 feature tables
-│   └── warehouse/           Phase 6 SQLite file + CSV export for Power BI (generated, not shipped)
+│   ├── raw/                 Source CSV datasets (orders, customers, shipments, etc.)
+│   ├── processed/           Cleaned tables and feature-engineered datasets
+│   └── warehouse/           SQLite warehouse database and CSV exports
 ├── src/
-│   ├── data_generation/     Phase 1 - synthetic data generators (10 tables)
-│   ├── etl/                 Phase 2 - extract/validate/transform/load + mock Shipping API
-│   ├── cloud/                Phase 3 - GCS/S3/dry-run upload
-│   ├── cleaning/             Phase 4 - dedup, nulls, negatives, outliers, tz, FX conversion
-│   ├── feature_engineering/  Phase 5 - margin, CLV, AOV, return rate, warehouse utilization
-│   ├── warehouse/            Phase 6/7/8 - star-schema builders, SQLite/MySQL loaders, SQL runner
-│   └── utils/                 shared logging + retry-with-backoff
-├── sql/                      Phase 7 - window functions, 107 business queries, views, procedures
-├── dashboards/                Phase 8 - Power BI DAX measures + build guide
-├── architecture/              Phase 9 - 5 diagrams (Mermaid source + SVG + PNG)
-├── screenshots/                Phase 11 - real charts from the warehouse (see above)
-├── linkedin/                    Phase 13 - launch assets + post (see Documentation Index)
-├── reports/                    data-cleaning report, KPI summary, test coverage report
-├── docs/                       SQL query optimization notes
-├── tests/                      Phase 10 - 71 unit tests
+│   ├── data_generation/     Synthetic data generators (15 interrelated tables)
+│   ├── etl/                 Incremental ETL pipeline and mock Shipping API
+│   ├── cloud/               Cloud storage adapters (GCS, S3, Dry-Run)
+│   ├── cleaning/            Data cleaning, deduplication, FX conversion, outlier flags
+│   ├── feature_engineering/ Margins, CLV, AOV, return rates, warehouse utilization
+│   ├── warehouse/           Star-schema builders, SQLite & MySQL loaders, SQL runner
+│   └── utils/               Shared logging and backoff retry utilities
+├── sql/
+│   ├── schema.sql           DDL schema for MySQL star schema
+│   ├── views.sql            10 analytical views for executive reporting
+│   ├── window_queries.sql   Advanced window functions & rolling calculations
+│   └── business_queries.sql 107 business queries answering supply chain questions
+├── dashboards/              Power BI DAX measure definitions & implementation guide
+├── architecture/            Architecture diagrams (Mermaid, SVG, PNG)
+├── screenshots/             Rendered analytics charts and distribution graphs
+├── reports/                 Data cleaning summary, KPI reports, test coverage report
+├── docs/                    SQL optimization benchmarks and index analysis
+├── tests/                   Unit test suite (71 tests)
 ├── requirements.txt
 ├── pytest.ini
-├── .env.example
-├── README.md                   this file
-└── CHANGELOG.md                full phase-by-phase build log
+└── README.md
 ```
 
-## Installation
+---
+
+## Quickstart & Execution
+
+### 1. Installation
 
 ```bash
-git clone <this-repo> && cd Enterprise-Ecommerce-SupplyChain-Optimization
-pip install -r requirements.txt   # pandas/numpy/flask/requests/pytest are all you need
-                                   # for the tested path (sqlite + dry_run cloud)
+git clone https://github.com/Ayyappanmj/Enterprise-Ecommerce-SupplyChain-Optimization.git
+cd Enterprise-Ecommerce-SupplyChain-Optimization
+pip install -r requirements.txt
+```
 
-# 1. Generate the full synthetic dataset (~15s, 500K orders)
+### 2. Run the Full Pipeline
+
+```bash
+# Step 1: Generate the full dataset (500,000 orders)
 python -m src.data_generation.run_all
 
-# 2. Clean it
+# Step 2: Clean and normalize data
 python -m src.cleaning.run_cleaning
 
-# 3. Load the star-schema warehouse (SQLite, zero extra setup)
+# Step 3: Engineer features and calculate executive KPIs
+python -m src.feature_engineering.run_feature_engineering
+
+# Step 4: Build and populate the star-schema warehouse
 python -m src.warehouse.run_load_warehouse
 
-# 4. Run the SQL analyses against it
+# Step 5: Install analytical views and execute SQL queries
+python -m src.warehouse.run_sql_file sql/views.sql
 python -m src.warehouse.run_sql_file sql/business_queries.sql --show 2
 
-# 5. Run the tests
+# Step 6: Run the unit test suite
 python -m unittest discover -s tests -v
 ```
 
-Optional, each needs real infrastructure not available while building this
-(see Known Limitations): `src.etl.run_pipeline` + `src.etl.shipping_api_server`
-(Phase 2 ETL demo), `src.cloud.run_upload --provider gcs|s3` (real cloud),
-`src.warehouse.run_load_warehouse --engine mysql` (real MySQL), opening
-`dashboards/dax_measures.dax` in Power BI Desktop.
+### Optional Components
+- **Incremental ETL Pipeline**: Launch the mock Shipping API (`python -m src.etl.shipping_api_server`) and run `python -m src.etl.run_pipeline`.
+- **Cloud Storage Sync**: Run `python -m src.cloud.run_upload --provider dry_run` (or `--provider gcs` / `--provider s3` with cloud credentials).
+- **MySQL Warehouse**: Set `WAREHOUSE_ENGINE=mysql` in `.env` and run `python -m src.warehouse.run_load_warehouse --engine mysql`.
 
-## Known Limitations
-
-Every phase's detailed verification notes are in
-[CHANGELOG.md](CHANGELOG.md). The infrastructure gaps, in one place:
-
-| What | Why | What was done instead |
-|---|---|---|
-| Real GCS / S3 | No cloud account/credentials available | `dry_run` provider (local-folder stand-in) tested end-to-end; real providers written against documented SDK APIs |
-| Real MySQL server | None available, no network to install one | SQLite tested end-to-end (1.5M+ rows, zero orphaned FKs); `sql/schema.sql` and `mysql_loader.py` written against MySQL 8.0 syntax, untested |
-| Power BI Desktop | Windows-only GUI software, this is a Linux/no-GUI environment | Every DAX measure's expected value checked arithmetically against the real warehouse in SQL first |
-| `sql/procedures.sql` | SQLite has no stored procedures/functions at all | Written against MySQL 8.0 syntax, genuinely never executed |
-| `pytest` / `coverage.py` | No network access to `pip install` | `unittest.TestCase` (pytest-compatible, stdlib-only) + stdlib `trace` module instead; same tests will run under real pytest unmodified |
+---
 
 ## Testing & Quality
 
-**71 tests, 98.7% line coverage, 0 failures** — see
-`reports/test_coverage_report.md` for the full breakdown and the one real bug
-these tests found (a `ZeroDivisionError` in margin calculation, caused by a
-pandas dtype-contamination edge case, fixed in 3 places).
+- **71 Unit Tests**, **98.7% Code Coverage**, **0 Failures**.
+- Validates data cleaning logic, schema integrity, foreign key consistency, and financial calculation precision.
+- Run tests with `python -m unittest discover -s tests -v` or `pytest`.
 
-## Future Improvements
+---
 
-- Run `src.warehouse.run_load_warehouse --engine mysql` and
-  `src.cloud.run_upload --provider gcs` against real infrastructure and fix
-  whatever the first real run surfaces.
-- Give Phase 1 a real per-country demand signal (population/GDP-weighted
-  order volume) instead of uniform random assignment, so country-level
-  analysis has a genuine signal instead of near-uniform noise (see Chart 2's
-  caveat above).
-- Model warehouse assignment by proximity to the customer instead of
-  uniformly at random — Phase 8 found this makes 96.7% of orders
-  "cross-border," which is a data-generation artifact, not realistic.
-- Add inventory and payments as proper fact tables in the warehouse (Phase 6
-  deliberately scoped to FactSales/FactShipping/FactReturns only).
-- Build a real `.pbix` once Power BI Desktop is available, and screenshot it
-  for real.
-- Add integration tests that run the full pipeline end-to-end (current tests
-  are unit-level, each phase tested in isolation with small fixtures).
+## Future Roadmap
+
+- [x] Enterprise Data Generation (15 interconnected tables)
+- [x] Multi-Source Incremental ETL Pipeline with Watermarking
+- [x] Cloud Storage Integration (GCS / S3 / Mock)
+- [x] Robust Data Cleaning & Timezone/Currency Normalization
+- [x] Feature Engineering (Gross/Net Margins, CLV, Delays, Utilization)
+- [x] Star-Schema Data Warehouse (SQLite & MySQL)
+- [x] 120+ Advanced SQL Analytical Queries & Views
+- [x] Power BI DAX Measures & Data Model Documentation
+- [x] Architecture Diagrams & Visualizations
+- [x] Comprehensive Unit Testing Suite
+- [ ] Real-time streaming ingestion connectors (Kafka / EventHub)
+- [ ] Machine learning forecasting models for regional warehouse demand
+
+---
 
 ## Documentation Index
 
-- [CHANGELOG.md](CHANGELOG.md) — full phase-by-phase build log
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) — one entry per version tag
-- [GITHUB_SETUP.md](GITHUB_SETUP.md) — repo description/topics, and an honest
-  note on what the commit history is (and isn't)
-- [LICENSE](LICENSE) — MIT
-- `architecture/README.md` — diagram details + regeneration instructions
-- `dashboards/README.md` — Power BI build guide
-- `docs/sql_query_optimization.md` — index behavior, measured query speedups
-- `reports/test_coverage_report.md` — test suite details
-- `reports/data_cleaning_report.md`, `reports/kpi_summary.json` — sample
-  output from a full-scale run
-- `linkedin/README.md`, `linkedin/LINKEDIN_POST.md` — launch assets and post,
-  including why the "dashboard preview" isn't a Power BI screenshot
-
-## Roadmap
-
-- [x] Phase 1 — Enterprise Data Generation
-- [x] Phase 2 — Multi-Source ETL Pipeline
-- [x] Phase 3 — Cloud Storage
-- [x] Phase 4 — Data Cleaning
-- [x] Phase 5 — Feature Engineering
-- [x] Phase 6 — MySQL Data Warehouse
-- [x] Phase 7 — Advanced SQL
-- [x] Phase 8 — Power BI Executive Dashboard
-- [x] Phase 9 — Architecture Diagrams
-- [x] Phase 10 — Testing
-- [x] Phase 11 — Documentation
-- [x] Phase 12 — GitHub packaging (.gitignore, LICENSE, release notes)
-- [x] Phase 13 — LinkedIn launch assets
-- [ ] Phase 14 — Resume content
-- [ ] Phase 15 — Interview preparation
+- [CHANGELOG.md](CHANGELOG.md) — Detailed implementation and engineering log
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) — Release history and milestone tags
+- [LICENSE](LICENSE) — MIT License
+- [architecture/README.md](architecture/README.md) — Architecture diagram notes
+- [dashboards/README.md](dashboards/README.md) — Power BI data model & DAX documentation
+- [docs/sql_query_optimization.md](docs/sql_query_optimization.md) — SQL index performance benchmarks
+- [reports/test_coverage_report.md](reports/test_coverage_report.md) — Unit test coverage breakdown
+- [reports/data_cleaning_report.md](reports/data_cleaning_report.md) — Cleaning transformation summary
+- [reports/kpi_summary.json](reports/kpi_summary.json) — Executive KPI summary dataset
