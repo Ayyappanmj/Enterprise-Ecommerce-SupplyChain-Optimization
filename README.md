@@ -8,13 +8,12 @@ diagrams, and a tested codebase — all answering one business question: **why
 are margins shrinking, and how much of that is international shipping delays
 and cross-border returns?**
 
-**Status: Phase 12 of 15.** Phases 1–11 (data → ETL → cloud → cleaning →
-features → warehouse → SQL → dashboard → diagrams → tests → docs) are built,
-and this phase packages the repo for GitHub: license, `.gitignore`, release
-notes, and a real commit history. See [CHANGELOG.md](CHANGELOG.md) for the
-full phase-by-phase build log, including every bug found and fixed along the
-way. Phases 13–15 (LinkedIn assets, resume content, interview prep) are not
-yet built.
+**Status: Phase 13 of 15.** Phases 1–12 (data → ETL → cloud → cleaning →
+features → warehouse → SQL → dashboard → diagrams → tests → docs → GitHub
+packaging) are built, and this phase adds LinkedIn launch assets. See
+[CHANGELOG.md](CHANGELOG.md) for the full phase-by-phase build log, including
+every bug found and fixed along the way. Phases 14–15 (resume content,
+interview prep) are not yet built.
 
 > **Read this first**: the dataset is synthetic (Phase 1 generates it from
 > scratch with NumPy/pandas, no real data anywhere in this repo), and several
@@ -183,6 +182,7 @@ Enterprise-Ecommerce-SupplyChain-Optimization/
 ├── dashboards/                Phase 8 - Power BI DAX measures + build guide
 ├── architecture/              Phase 9 - 5 diagrams (Mermaid source + SVG + PNG)
 ├── screenshots/                Phase 11 - real charts from the warehouse (see above)
+├── linkedin/                    Phase 13 - launch assets + post (see Documentation Index)
 ├── reports/                    data-cleaning report, KPI summary, test coverage report
 ├── docs/                       SQL query optimization notes
 ├── tests/                      Phase 10 - 71 unit tests
@@ -274,6 +274,8 @@ pandas dtype-contamination edge case, fixed in 3 places).
 - `reports/test_coverage_report.md` — test suite details
 - `reports/data_cleaning_report.md`, `reports/kpi_summary.json` — sample
   output from a full-scale run
+- `linkedin/README.md`, `linkedin/LINKEDIN_POST.md` — launch assets and post,
+  including why the "dashboard preview" isn't a Power BI screenshot
 
 ## Roadmap
 
@@ -289,6 +291,6 @@ pandas dtype-contamination edge case, fixed in 3 places).
 - [x] Phase 10 — Testing
 - [x] Phase 11 — Documentation
 - [x] Phase 12 — GitHub packaging (.gitignore, LICENSE, release notes)
-- [ ] Phase 13 — LinkedIn launch assets
+- [x] Phase 13 — LinkedIn launch assets
 - [ ] Phase 14 — Resume content
 - [ ] Phase 15 — Interview preparation

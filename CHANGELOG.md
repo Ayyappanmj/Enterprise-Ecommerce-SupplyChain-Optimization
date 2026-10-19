@@ -691,3 +691,37 @@ RELEASE_NOTES.md
 GITHUB_SETUP.md
 .git/                  (real commit history, v0.1.0 .. v0.11.0 tags)
 ```
+
+## Phase 13 — LinkedIn Launch Assets
+
+Five social/profile images (`linkedin/`) built with PIL and a dark-themed
+`mermaid-cli` render of the real architecture diagram — not an external
+image-generation service, which is the right tool for legible title cards.
+A written launch post (`linkedin/LINKEDIN_POST.md`).
+
+**The one decision worth documenting**: the spec asked for a "dashboard
+preview," but no Power BI file exists (Phase 8). Rather than mock up
+something that looks like a Power BI screenshot and let it be mistaken for
+one, `dashboard_preview.png` uses two real charts from `screenshots/` with
+a label baked directly into the image — "No Power BI dashboard exists for
+this project... see repo's Known Limitations" — so the caveat travels with
+the image even if it's shared without its caption.
+
+The post itself was written without a fabricated business-impact number
+("saved $2M," "cut delays 40%") since this never ran against a real
+business and that number would be invented. What it quantifies instead -
+71 tests, 98.7% coverage, 120+ queries, the specific bugs found - is
+everything a reader could open the repo and verify themselves.
+
+### Folder additions
+
+```
+linkedin/
+├── README.md
+├── LINKEDIN_POST.md
+├── linkedin_banner.png
+├── project_thumbnail.png
+├── architecture_social.png
+├── dashboard_preview.png
+└── github_social_preview.png
+```

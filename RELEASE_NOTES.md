@@ -3,6 +3,15 @@
 One entry per git tag. Each tag corresponds to one phase of the build — see
 [CHANGELOG.md](CHANGELOG.md) for the full detail behind any entry here.
 
+## v0.13.0 — LinkedIn Launch Assets
+
+Five social/profile images (`linkedin/`) and a launch post. The "dashboard
+preview" is honestly two real charts from `screenshots/`, not a mocked-up
+Power BI screenshot — labeled as such directly in the image. The post
+quantifies real, verifiable outcomes (71 tests, 98.7% coverage, 120+
+queries, specific bugs found) rather than an invented business-impact
+number.
+
 ## v0.12.0 — GitHub Packaging
 
 MIT `LICENSE`, an expanded `.gitignore` (coverage artifacts, `node_modules`,
