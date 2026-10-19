@@ -111,7 +111,7 @@ def _write_markdown_report(report_df: pd.DataFrame):
         "the order date, demonstrating an as-of currency join.",
     ]
 
-    with open(os.path.join(REPORTS_DIR, "data_cleaning_report.md"), "w") as f:
+    with open(os.path.join(REPORTS_DIR, "data_cleaning_report.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
 
