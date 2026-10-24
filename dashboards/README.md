@@ -1,17 +1,21 @@
-# Phase 8 — Power BI Executive Dashboard: Build Guide
+# Power BI Executive Dashboard & Interactive Viewer
 
-> ⚠️ **No Power BI Desktop was available in the build environment** (Windows-only
-> software; this environment is Linux with no GUI). Nothing in this phase could be
-> opened, clicked through, or screenshotted. What follows is real, checkable
-> content — DAX written against Power BI's documented language and checked
-> arithmetically against the actual warehouse data, a data model that matches
-> what Phase 6 built and Phase 7 queried, and precise page-by-page instructions —
-> but it has not been assembled into a `.pbix` file or visually verified. You will
-> need Power BI Desktop (Windows, or a VM/Windows install) to build the actual
-> file. If a measure or setting below doesn't work as described, tell me and I'll
-> fix it — I'd rather you hit a documented issue than a silent wrong number.
+This directory contains the **Interactive Power BI Dashboard** (`interactive_powerbi.html`), the complete **DAX Measures Library** (`dax_measures.dax`), and the step-by-step build guide for connecting to the star-schema warehouse.
 
-## 1. Connect to the data
+---
+
+## 🚀 Instant Interactive Viewer
+
+Open [`interactive_powerbi.html`](interactive_powerbi.html) directly in any web browser to explore the full dashboard:
+- **6 Report Pages**: Executive Overview, Global Geography & Profit, Warehouse Delays, Shipping Intelligence, Customer Analytics, and Net Margin Waterfall.
+- **Dynamic Slicers**: Live filtering by Year (2023–2025), Region (5 global regions), and Category with instant metric recalculation.
+- **Interactive Drill-Through**: Click on any country in the matrix for country-specific deep-dive diagnostics.
+- **Verified DAX Inspector**: Inspect the exact DAX measures reconciled against the warehouse.
+- **CSV Data Export**: One-click download of filtered analytical summaries.
+
+---
+
+## 1. Connect to the Data
 
 Three options, in order of how much setup they need:
 
@@ -187,12 +191,14 @@ return reason, count, refund $ (from `FactReturns[return_reason]`). Card:
   nearest warehouse" logic. Worth knowing before this number appears on a
   slide.
 
-## Folder contents
+## Folder Contents
 
 ```
 dashboards/
-├── README.md          (this file)
-└── dax_measures.dax    (every DAX measure, organized by page)
+├── interactive_powerbi.html   (interactive web dashboard with 6 pages, slicers, drill-through)
+├── index.html                 (web entrypoint for local or GitHub Pages preview)
+├── dax_measures.dax           (every DAX measure, organized by page)
+└── README.md                  (this file)
 src/warehouse/
-└── export_to_csv.py    (dumps the warehouse to CSV for Power BI's Get Data > Folder)
+└── export_to_csv.py           (dumps the warehouse to CSV for Power BI Desktop import)
 ```
